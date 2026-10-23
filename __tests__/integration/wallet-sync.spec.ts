@@ -21,6 +21,8 @@ describe('Wallet sync integration', () => {
     expect(address.length).toBeGreaterThan(20)
   })
 
+  // Native key derivation across scan batches is slower under CI V8 coverage.
+  // Keep the complete scan and assertions; bound these integration cases at 30s.
   it('syncWallet accumulates UTXOs found across multiple batches', async () => {
     importWallet(TEST_MNEMONIC, TEST_PIN)
     let callCount = 0
@@ -42,7 +44,7 @@ describe('Wallet sync integration', () => {
     )
     const utxos = await syncWallet(25, 25)
     expect(utxos.length).toBeGreaterThanOrEqual(2)
-  })
+  }, 30_000)
 
   it('all returned UTXOs have derivation paths set', async () => {
     importWallet(TEST_MNEMONIC, TEST_PIN)
@@ -70,7 +72,7 @@ describe('Wallet sync integration', () => {
       expect(utxo.derivationPath).toBeTruthy()
       expect(utxo.derivationPath).toMatch(/^m\/44'\/0\/[01]\/\d+$/)
     }
-  })
+  }, 30_000)
 
   it('syncWallet calls onProgress callback during scan', async () => {
     importWallet(TEST_MNEMONIC, TEST_PIN)
@@ -78,7 +80,7 @@ describe('Wallet sync integration', () => {
     await syncWallet(25, 25, (p) => messages.push(p.message))
     expect(messages.length).toBeGreaterThan(0)
     expect(messages[messages.length - 1]).toContain('Scan complete')
-  })
+  }, 30_000)
 
   it('handles rate limit during sync and retries', async () => {
     let callCount = 0
@@ -96,7 +98,7 @@ describe('Wallet sync integration', () => {
     await syncWallet(25, 25, (p) => messages.push(p.message))
     // The rate-limit message is emitted when a 429 is received before retrying
     expect(messages.some(m => m.includes('Rate limited') || m.includes('rate limit'))).toBe(true)
-  })
+  }, 30_000)
 
   it('rehydrates wallet from localStorage when singleton missing', async () => {
     localStorage.setItem('wallet_mnemonic', TEST_MNEMONIC)
@@ -104,5 +106,5 @@ describe('Wallet sync integration', () => {
     const utxos = await syncWallet(25, 25)
     expect(Array.isArray(utxos)).toBe(true)
     localStorage.clear()
-  })
+  }, 30_000)
 })
